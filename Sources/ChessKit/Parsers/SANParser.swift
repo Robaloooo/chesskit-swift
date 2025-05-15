@@ -73,10 +73,36 @@ public enum SANParser {
 
       var move: Move
 
-      if isCapture(san: san), let capturedPiece = position.piece(at: end) {
-        move = Move(result: .capture(capturedPiece), piece: pawn, start: start, end: capturedPiece.square, checkState: checkstate)
+      if isCapture(san: san) {
+        if let capturedPiece = position.piece(at: end) {
+          // Regular capture
+          move = Move(result: .capture(capturedPiece),
+                      piece: pawn,
+                      start: start,
+                      end: capturedPiece.square,
+                      checkState: checkstate)
+        } else if let ep = position.enPassant,
+                  ep.captureSquare == end {
+          // En‑passant capture (captured pawn is *not* on the target square)
+          move = Move(result: .capture(ep.pawn),
+                      piece: pawn,
+                      start: start,
+                      end: end,
+                      checkState: checkstate)
+        } else {
+          // Fallback to normal move if no piece is present (shouldn’t happen)
+          move = Move(result: .move,
+                      piece: pawn,
+                      start: start,
+                      end: end,
+                      checkState: checkstate)
+        }
       } else {
-        move = Move(result: .move, piece: pawn, start: start, end: end, checkState: checkstate)
+        move = Move(result: .move,
+                    piece: pawn,
+                    start: start,
+                    end: end,
+                    checkState: checkstate)
       }
 
       if let promotionPieceKind = promotionPiece(for: san) {
@@ -186,8 +212,19 @@ public enum SANParser {
   /// - returns: Whether the SAN is valid.
   ///
   private static func isValid(san: String) -> Bool {
-    san.range(of: SANParser.Pattern.full, options: .regularExpression) != nil
-  }
+    // Original comprehensive validation first
+    if san.range(of: SANParser.Pattern.full, options: .regularExpression) != nil {
+      return true
+    }
+
+    // --- Additional support for pawn-promotion SAN that the legacy
+    // regex misses (e.g. "e8=Q", "exd8=Q+", "dxe1=N#").
+    // Matches: <file>[x<file>]<rank>=<piece>[+|#]
+    // <file> = a-h, <rank> = 1-8, <piece> = Q R B N
+    let promotionPattern = #"^[a-h](x[a-h])?[1-8]=[QRBN](\+|#)?$"#
+
+    return san.range(of: promotionPattern, options: .regularExpression) != nil
+}
 
   /// Returns the target square for a SAN move.
   ///
