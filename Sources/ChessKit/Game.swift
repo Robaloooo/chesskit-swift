@@ -102,6 +102,10 @@ public struct Game: Hashable, Sendable {
     }
 
     var newPosition = currentPosition
+    // --- En passant handling ---
+    // Any existing en-passant opportunity expires after every ply.
+    newPosition.enPassant = nil
+    newPosition.enPassantIsPossible = false
 
     switch move.result {
     case .move:
@@ -119,6 +123,13 @@ public struct Game: Hashable, Sendable {
       newPosition.promote(pieceAt: move.end, to: promotedPiece.kind)
     }
 
+    // If the move was a two-square pawn advance, register the en-passant target square.
+    if move.piece.kind == .pawn,
+       abs(move.start.rank.value - move.end.rank.value) == 2,
+       let movedPawn = newPosition.piece(at: move.end) {
+      newPosition.enPassant = EnPassant(pawn: movedPawn)
+      newPosition.enPassantIsPossible = true
+    }
     positions[newIndex] = newPosition
     return newIndex
   }
