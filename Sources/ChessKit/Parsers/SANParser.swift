@@ -7,6 +7,21 @@
 /// of a chess move.
 public enum SANParser {
 
+  // PATCH: Updated castling regex to allow for "+" or "#" at end
+  struct Pattern {
+    static let shortCastle = #"^O-O([+#])?$"#
+    static let longCastle = #"^O-O-O([+#])?$"#
+    static let pawnFile = #"^[a-h]"#
+    static let pieceKind = #"[NBRQK]"#
+    static let targetSquare = #"[a-h][1-8]"#
+    static let promotion = #"=[NBRQ]"#
+    static let disambiguation = #"[a-h1-8]{1,2}"#
+    static let rank = #"[1-8]"#
+    static let file = #"[a-h]"#
+    static let square = #"[a-h][1-8]"#
+    static let full = #"^([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](=[NBRQ])?|O-O(-O)?)[+#]?$"#
+  }
+
   /// Parses a SAN string and returns a move.
   ///
   /// - parameter san: The SAN string of a move.
@@ -31,7 +46,7 @@ public enum SANParser {
       checkstate = .check
     }
 
-    // castling
+    // castling (PATCH: regex now matches O-O+ and O-O-O+ etc.)
     var castling: Castling?
 
     if san.range(of: Pattern.shortCastle, options: .regularExpression) != nil {
@@ -224,7 +239,7 @@ public enum SANParser {
     let promotionPattern = #"^[a-h](x[a-h])?[1-8]=[QRBN](\+|#)?$"#
 
     return san.range(of: promotionPattern, options: .regularExpression) != nil
-}
+  }
 
   /// Returns the target square for a SAN move.
   ///
