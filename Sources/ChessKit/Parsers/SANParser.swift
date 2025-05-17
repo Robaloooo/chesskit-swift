@@ -7,7 +7,6 @@
 /// of a chess move.
 public enum SANParser {
 
-  // PATCH: Updated castling regex to allow for "+" or "#" at end
   struct Pattern {
     static let shortCastle = #"^O-O([+#])?$"#
     static let longCastle = #"^O-O-O([+#])?$"#
@@ -19,6 +18,7 @@ public enum SANParser {
     static let rank = #"[1-8]"#
     static let file = #"[a-h]"#
     static let square = #"[a-h][1-8]"#
+    // PATCH: Now allows "+" or "#" after castling in full.
     static let full = #"^([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](=[NBRQ])?|O-O(-O)?)[+#]?$"#
   }
 
@@ -46,7 +46,7 @@ public enum SANParser {
       checkstate = .check
     }
 
-    // castling (PATCH: regex now matches O-O+ and O-O-O+ etc.)
+    // castling
     var castling: Castling?
 
     if san.range(of: Pattern.shortCastle, options: .regularExpression) != nil {
